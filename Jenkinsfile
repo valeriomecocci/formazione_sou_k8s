@@ -5,7 +5,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = "valeriomecocci/flask-app"
-        DOCKER_CREDENTIALS = "dockerhub-credentials"
     }
 
     stages {
@@ -17,12 +16,9 @@ pipeline {
             }
         }
 
-       stage('Build') {
+        stage('Build') {
             steps {
-                script {
-                    def image = docker.build("${IMAGE_NAME}:latest")
-                    image.push()
-                }
+                sh "docker build -t $IMAGE_NAME:latest ."
             }
         }
 
@@ -40,13 +36,9 @@ pipeline {
             }
         }
 
-        stage('Push Image') {
+        stage('Push') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_CREDENTIALS) {
-                        sh "docker push $IMAGE_NAME:latest"
-                    }
-                }
+                sh "docker push $IMAGE_NAME:latest"
             }
         }
     }
