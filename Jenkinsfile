@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'docker'
+    }
 
     environment {
         IMAGE_NAME = "valeriomecocci/flask-app"
