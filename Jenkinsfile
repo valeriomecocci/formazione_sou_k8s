@@ -17,20 +17,25 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+       stage('Build') {
             steps {
                 script {
-                    sh "docker build -t $IMAGE_NAME:latest ."
+                    def image = docker.build("${IMAGE_NAME}:latest")
+                    image.push()
                 }
             }
         }
 
         stage('Login Docker Hub') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_CREDENTIALS) {
-                        echo "Logged into Docker Hub"
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    """
                 }
             }
         }
