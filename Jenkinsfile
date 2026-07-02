@@ -1,4 +1,5 @@
 pipeline {
+
     agent {
         label 'docker'
     }
@@ -9,27 +10,16 @@ pipeline {
 
     stages {
 
-
-        stage('Debug') {
-            steps {
-                sh 'printenv | sort'
-            }
-        }
-
-
+        //determina il tag dell'immagine docker in base al branch git
         stage('Determine Docker Tag') {
             steps {
                 script {
 
-                    if (env.TAG_NAME) {
-
-                        env.IMAGE_TAG = env.TAG_NAME
-
-                    } else if (env.BRANCH_NAME == 'master') {
+                    if (env.GIT_BRANCH == 'origin/main') {
 
                         env.IMAGE_TAG = "latest"
 
-                    } else if (env.BRANCH_NAME == 'develop') {
+                    } else if (env.GIT_BRANCH == 'origin/develop') {
 
                         env.IMAGE_TAG = "develop-${env.GIT_COMMIT.take(7)}"
 
@@ -39,19 +29,23 @@ pipeline {
 
                     }
 
-                    echo "Docker tag: ${env.IMAGE_TAG}"
+                    echo "Tag Docker: ${env.IMAGE_TAG}"
                 }
             }
         }
 
-        /*---- RIDONDANTE:questo stage Checkout se se usa la modalità SCM della pipeline---
+
+        /*---- RIDONDANTE: questo stage non serve se si usa
+              la modalità pipeline script from SCM
+
         stage('Checkout') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/valeriomecocci/formazione_sou_k8s.git'
             }
         }
-        -------------------------*/
+
+        --------------------------------------------------------------*/
 
         stage('Build') {
             steps {
@@ -62,27 +56,26 @@ pipeline {
         stage('Login Docker Hub') {
             steps {
 
-                /*qui uso il jenkins binding plugin
+                /*
+                 withCredentials è uno step del jenkins credentials binding plugin.
+                 Recupera le credenziali salvate nel credential store di jenkins
+                 e le rende disponibili come variabili d'ambiente temporanee
+                 
+                 usernamePassword indica che la credenziale è composta
+                 da username e password (in questo caso il token DockerHub)
+                 */
 
-                withCredentials prende delle credenziali salvate in Jenkins e le rende diponibili 
-                come variabili d'ambiente temporaneamente: NON LE LEGGE, le recupera dal credential store
-                di Jenkins. Finito questo blocco, le variabili al suo interno vengono eliminate
-
-                usernamePassword è un oggetto fornito dal plugin che indica che le credenziali sono 
-                formate da username + password
-                */
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-credentials',
-                    //id delle credenziali, DockerHub in questo caso, aggiunte su jenkins
 
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
-                    //in questo caso la passwd è il token di dockerhub
                 )]) {
-                    
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                    //--password-stdin signifca che la password viene acquisita dall'input s
-                    //standard, cioè dalla pipe
+
+                    /*Docker legge il token dallo standard input (stdin),
+                    che riceve il valore tramite la pipe dal comando echo*/
+
+                    sh "echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin"
                 }
             }
         }
