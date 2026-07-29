@@ -1,0 +1,29 @@
+#Questo file è la configurazione di default del chart, cioè il set di parametri che il template consuma.
+#Ogni chiave qui diventa accessibile nei template tramite .Values.<percorso> 
+#(es. .Values.image.tag, .Values.replicaCount).
+
+#Nota che è puro YAML descrittivo,il templating avviene solo nei file dentro templates/
+#che leggono questi valori.
+
+
+replicaCount: 1 #il Deployment mantiene attivo un solo Pod, esercizio test 
+
+image:
+  repository: valeriomecocci/flask-app
+  tag: latest
+  pullPolicy: IfNotPresent #kubelet scarica l'immagine da Docker Hub solo se non è già presente in locale sul nodo
+
+containerPort: 5000
+#la porta su cui l'applicazione Flask ascolta dentro il container 
+#coerente con quanto visto in teoria su Flask: app.run(host="0.0.0.0", port=5000)).
+#Reso parametrico qui invece di scriverlo fisso nel template, nel caso in futuro cambi porta.
+
+
+#risorse di cui il container ha bisogno e risorse max utilizzabili dal container
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi

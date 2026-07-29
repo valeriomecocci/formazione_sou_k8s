@@ -1,0 +1,11 @@
+Il chart {{ .Chart.Name }} è stato installato con successo.
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Immagine deployata: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+Per verificare lo stato del pod:
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+Per vedere i log:
+  kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }}

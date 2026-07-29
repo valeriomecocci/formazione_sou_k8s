@@ -1,0 +1,6 @@
+apiVersion: v2
+name: flask-app
+description: Helm chart per il deploy della webapp Flask hello-world
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
