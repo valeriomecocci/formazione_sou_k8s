@@ -50,6 +50,7 @@ pipeline {
                 sh "docker build -t $IMAGE_NAME:$IMAGE_TAG ."
             }
         }
+        
 
         stage('Login Docker Hub') {
             steps {
@@ -82,10 +83,71 @@ pipeline {
             }
         }
 
+
         stage('Push') {
             steps {
                 sh "docker push $IMAGE_NAME:$IMAGE_TAG"
             }
         }
+
+
+        stage('Test Kubernetes Connection') {
+            steps {
+
+                /*
+                * Recupera il file kubeconfig salvato nelle Credentials.
+                * Jenkins copia temporaneamente il file sul filesystem
+                * dell'agent e assegna il suo percorso alla variabile KUBECONFIG.
+                */
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig-kind',
+                        variable: 'KUBECONFIG'
+                    )
+                ]) {
+
+                    sh '''
+                        echo "Verifica connessione al cluster..."
+                        kubectl get namespaces
+                    '''
+                }
+            }
+        }
+
+
+        stage('Validate Helm Chart') {
+            steps {
+
+                sh '''
+                    echo "Validazione del chart Helm..."
+                    helm lint charts/flask-app
+                '''
+            }
+        }
+
+
+        stage('Deploy Helm Chart') {
+            steps {
+
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig-kind',
+                        variable: 'KUBECONFIG'
+                    )
+                ]) {
+
+                    sh '''
+                        echo "Deploy dell'applicazione tramite Helm..."
+
+                        helm upgrade --install flask-app charts/flask-app \
+                            --namespace formazione-sou \
+                            --create-namespace \
+                            --set image.tag=$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+
+
     }
 }
